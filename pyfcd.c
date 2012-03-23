@@ -54,6 +54,50 @@ PyFCD_init(PyFCD *self, PyObject *args, PyObject *kwds)
 
 
 static PyObject *
+PyFCD_get_dc_correction(PyFCD *self, void *closure)
+{
+    int i, q;
+    if (fcd_get_dc_correction(self->dev, &i, &q))
+    {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+    return Py_BuildValue("ii", i, q);
+}
+
+
+static int
+PyFCD_set_dc_correction(PyFCD *self, PyObject *value, void *closure)
+{
+    int i, q;
+    if (NULL == value)
+    {
+        PyErr_SetString(PyExc_TypeError, "Cannot delete dc_correction");
+        return -1;
+    }
+    if (!PySequence_Check(value) || PySequence_Size(value) != 2)
+    {
+        PyErr_SetString(PyExc_TypeError,
+            "DC correction must be a sequence of 2 integers");
+        return -1;
+    }
+    value = PySequence_Tuple(value);
+    if (!PyArg_ParseTuple(value, "ii", &i, &q))
+    {
+        Py_XDECREF(value);
+        return -1;
+    }
+    Py_DECREF(value);
+    if (fcd_set_dc_correction(self->dev, i, q))
+    {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return -1;
+    }
+    return 0;
+}
+
+
+static PyObject *
 PyFCD_get_frequency(PyFCD *self, void *closure)
 {
     unsigned int freq;
@@ -94,6 +138,8 @@ PyFCD_set_frequency(PyFCD *self, PyObject *value, void *closure)
 
 
 static PyGetSetDef PyFCD_getset[] = {
+    {"dc_correction", (getter)PyFCD_get_dc_correction,
+        (setter)PyFCD_set_dc_correction, "DC correction", NULL},
     {"frequency", (getter)PyFCD_get_frequency, (setter)PyFCD_set_frequency,
         "tuned frequency", NULL},
     {NULL} /* Sentinel */
