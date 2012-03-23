@@ -53,6 +53,55 @@ PyFCD_init(PyFCD *self, PyObject *args, PyObject *kwds)
 }
 
 
+static PyObject *
+PyFCD_get_frequency(PyFCD *self, void *closure)
+{
+	unsigned int freq;
+	if (fcd_get_frequency_Hz(self->dev, &freq))
+	{
+		PyErr_SetFromErrno(PyExc_IOError);
+		return NULL;
+	}
+	return PyInt_FromLong(freq);
+}
+
+
+static int
+PyFCD_set_frequency(PyFCD *self, PyObject *value, void *closure)
+{
+	unsigned int freq;
+	if (NULL == value)
+	{
+		PyErr_SetString(PyExc_TypeError, "Cannot delete frequency");
+		return -1;
+	}
+	if (!PyInt_Check(value))
+	{
+		PyErr_SetString(PyExc_TypeError, "Frequency must be an integer");
+		return -1;
+	}
+
+	freq = PyInt_AsUnsignedLongMask(value);
+
+	if (fcd_set_frequency_Hz(self->dev, freq))
+	{
+		PyErr_SetFromErrno(PyExc_IOError);
+		return -1;
+	}
+
+
+	return 0;
+}
+
+
+static PyGetSetDef PyFCD_getset[] = {
+	{"frequency", (getter)PyFCD_get_frequency, (setter)PyFCD_set_frequency,
+		"tuned frequency", NULL},
+	{NULL} /* Sentinel */
+};
+
+
+
 static PyTypeObject PyFCDType = {
 	PyObject_HEAD_INIT(NULL)
 	0,                         /* ob_size */
@@ -84,7 +133,7 @@ static PyTypeObject PyFCDType = {
 	0,                         /* tp_iternext */
 	0,                         /* tp_methods */
 	0,                         /* tp_members */
-	0,                         /* tp_getset */
+	PyFCD_getset,              /* tp_getset */
 	0,                         /* tp_base */
 	0,                         /* tp_dict */
 	0,                         /* tp_descr_get */
