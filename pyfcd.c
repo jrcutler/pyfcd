@@ -113,19 +113,23 @@ PyFCD_get_frequency(PyFCD *self, void *closure)
 static int
 PyFCD_set_frequency(PyFCD *self, PyObject *value, void *closure)
 {
+    PyObject *ivalue;
     unsigned int freq;
+
     if (NULL == value)
     {
         PyErr_SetString(PyExc_TypeError, "Cannot delete frequency");
         return -1;
     }
-    if (!PyInt_Check(value))
+
+    ivalue = PyNumber_Int(value);
+    if (NULL == ivalue)
     {
-        PyErr_SetString(PyExc_TypeError, "Frequency must be an integer");
         return -1;
     }
 
-    freq = PyInt_AsUnsignedLongMask(value);
+    freq = PyInt_AsUnsignedLongMask(ivalue);
+    Py_DECREF(ivalue);
 
     if (fcd_set_frequency_Hz(self->dev, freq))
     {
